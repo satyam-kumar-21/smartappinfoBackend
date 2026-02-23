@@ -16,7 +16,7 @@ export const createApp = async (req, res) => {
       appStoreUrl
     } = req.body;
     const icon = req.file?.path || req.body.icon;
-    console.log('CREATE APP DEBUG:', {
+    // ...existing code...
       body: req.body,
       iconFile: req.file,
       icon,

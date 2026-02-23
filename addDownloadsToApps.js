@@ -13,7 +13,7 @@ async function addDownloadsField() {
     { downloads: { $exists: false } },
     { $set: { downloads: '' } }
   );
-  console.log(`Updated ${result.modifiedCount} apps to add downloads field.`);
+  // ...existing code...
   await mongoose.disconnect();
 }
 

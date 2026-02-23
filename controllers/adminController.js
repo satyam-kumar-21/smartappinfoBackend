@@ -2,7 +2,7 @@ import jwt from 'jsonwebtoken';
 
 export const adminLogin = (req, res) => {
   const { email, password } = req.body;
-  console.log(req.body);
+  // ...existing code...
   
   if (
     email === process.env.ADMIN_EMAIL &&
