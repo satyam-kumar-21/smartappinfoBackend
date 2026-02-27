@@ -17,18 +17,6 @@ export const createApp = async (req, res) => {
     } = req.body;
     const icon = req.file?.path || req.body.icon;
     // ...existing code...
-      body: req.body,
-      iconFile: req.file,
-      icon,
-      images,
-      rating,
-      votes,
-      description1,
-      description2,
-      description3,
-      playStoreUrl,
-      appStoreUrl
-    });
     const app = new App({
       name,
       category,
