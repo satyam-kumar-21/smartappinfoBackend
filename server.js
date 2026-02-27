@@ -4,6 +4,7 @@ import cors from 'cors';
 import connectDB from './config/db.js';
 import adminRoutes from './routes/admin.js';
 import appRoutes from './routes/apps.js';
+import uploadRoutes from './routes/upload.js';
 import blogRoutes from './routes/blogs.js';
 import topicRoutes from './routes/topics.js';
 import categoryRoutes from './routes/category.js';
@@ -24,6 +25,7 @@ app.use(express.json());
 
 app.use('/api/admin', adminRoutes);
 app.use('/api/apps', appRoutes);
+app.use('/api/apps', uploadRoutes);
 app.use('/api/blogs', blogRoutes);
 app.use('/api/topics', topicRoutes);
 app.use('/api/categories', categoryRoutes);
