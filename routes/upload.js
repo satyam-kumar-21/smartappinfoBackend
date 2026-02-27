@@ -13,7 +13,7 @@ router.post('/upload-icon', adminAuth, upload.single('icon'), (req, res) => {
 });
 
 // Upload images endpoint (multiple)
-router.post('/upload-images', adminAuth, upload.array('images', 10), (req, res) => {
+router.post('/upload-images', adminAuth, upload.array('images', 30), (req, res) => {
   if (!req.files || !req.files.length) {
     return res.status(400).json({ error: 'No images uploaded' });
   }
