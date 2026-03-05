@@ -41,10 +41,14 @@ export const createApp = async (req, res) => {
 
 export const getApps = async (req, res) => {
   try {
-    const { category } = req.query;
+    const { category, limit = 20, skip = 0 } = req.query;
     const filter = category ? { category } : {};
-    const apps = await App.find(filter).sort({ createdAt: -1 });
-    res.json(apps);
+    const apps = await App.find(filter)
+      .sort({ createdAt: -1 })
+      .skip(Number(skip))
+      .limit(Number(limit));
+    const total = await App.countDocuments(filter);
+    res.json({ apps, total });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
