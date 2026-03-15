@@ -42,7 +42,11 @@ export const createApp = async (req, res) => {
 export const getApps = async (req, res) => {
   try {
     const { category, page = 1, limit = 20 } = req.query;
-    const filter = category ? { category } : {};
+    let filter = {};
+    if (category) {
+      // Case-insensitive, partial match for category
+      filter.category = { $regex: category, $options: 'i' };
+    }
     const pageNum = parseInt(page, 10) || 1;
     const limitNum = parseInt(limit, 10) || 20;
     const skip = (pageNum - 1) * limitNum;
