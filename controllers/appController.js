@@ -41,10 +41,25 @@ export const createApp = async (req, res) => {
 
 export const getApps = async (req, res) => {
   try {
-    const { category } = req.query;
+    const { category, page = 1, limit = 20 } = req.query;
     const filter = category ? { category } : {};
-    const apps = await App.find(filter).sort({ createdAt: -1 });
-    res.json(apps);
+    const pageNum = parseInt(page, 10) || 1;
+    const limitNum = parseInt(limit, 10) || 20;
+    const skip = (pageNum - 1) * limitNum;
+    const [apps, total] = await Promise.all([
+      App.find(filter)
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limitNum),
+      App.countDocuments(filter)
+    ]);
+    res.json({
+      apps,
+      total,
+      page: pageNum,
+      limit: limitNum,
+      totalPages: Math.ceil(total / limitNum)
+    });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
