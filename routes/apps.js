@@ -7,11 +7,14 @@ import {
   getAppById,
   updateApp,
   deleteApp,
+  getAppBySlug
 } from '../controllers/appController.js';
 
 const router = express.Router();
 
 router.get('/', getApps);
+// New endpoint: get app by slugified name
+router.get('/slug/:slug', getAppBySlug);
 router.get('/:id', getAppById);
 // Accept both file and JSON body for icon/images
 router.post('/', adminAuth, (req, res, next) => {

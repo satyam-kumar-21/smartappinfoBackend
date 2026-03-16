@@ -1,3 +1,20 @@
+// Helper to slugify app name (same as frontend)
+function slugify(name) {
+  return name?.toLowerCase().replace(/\s+/g, '-') || '';
+}
+
+// Get app by slugified name
+export const getAppBySlug = async (req, res) => {
+  try {
+    const { slug } = req.params;
+    const allApps = await App.find({});
+    const found = allApps.find(a => slugify(a.name) === slug);
+    if (!found) return res.status(404).json({ message: 'App not found' });
+    res.json(found);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
 import App from '../models/App.js';
 
 export const createApp = async (req, res) => {
