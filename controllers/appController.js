@@ -97,6 +97,8 @@ export const getAppById = async (req, res) => {
 };
 
 export const updateApp = async (req, res) => {
+  console.log(req);
+  
   try {
     const {
       name,
