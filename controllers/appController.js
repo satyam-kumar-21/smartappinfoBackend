@@ -58,12 +58,26 @@ export const createApp = async (req, res) => {
 
 export const getApps = async (req, res) => {
   try {
-    const { category, page = 1, limit = 20 } = req.query;
+    const { category, search, page = 1, limit = 20 } = req.query;
     let filter = {};
+    
+    // Build category filter
     if (category) {
-      // Case-insensitive, partial match for category
       filter.category = { $regex: category, $options: 'i' };
     }
+    
+    // Build search filter - search across multiple fields
+    if (search) {
+      const searchRegex = { $regex: search, $options: 'i' };
+      filter.$or = [
+        { name: searchRegex },
+        { category: searchRegex },
+        { description1: searchRegex },
+        { description2: searchRegex },
+        { description3: searchRegex }
+      ];
+    }
+    
     const pageNum = parseInt(page, 10) || 1;
     const limitNum = parseInt(limit, 10) || 20;
     const skip = (pageNum - 1) * limitNum;
@@ -98,6 +112,8 @@ export const getAppById = async (req, res) => {
 
 export const updateApp = async (req, res) => {
 
+  console.log(req);
+  
   
   try {
     const {
