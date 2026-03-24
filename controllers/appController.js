@@ -7,10 +7,22 @@ function slugify(name) {
 export const getAppBySlug = async (req, res) => {
   try {
     const { slug } = req.params;
-    const allApps = await App.find({});
-    const found = allApps.find(a => slugify(a.name) === slug);
-    if (!found) return res.status(404).json({ message: 'App not found' });
-    res.json(found);
+    const decodedSlug = decodeURIComponent(slug);
+    
+    // Get all app names and find match using slugify function
+    // This is the most reliable way to match since it uses exact same logic as frontend
+    const allApps = await App.find({}, 'name').lean();
+    
+    // Find app where slugified name matches the slug
+    const matchedApp = allApps.find(app => slugify(app.name) === decodedSlug);
+    
+    if (!matchedApp) {
+      return res.status(404).json({ message: 'App not found' });
+    }
+    
+    // Now fetch the full app data
+    const app = await App.findOne({ name: matchedApp.name });
+    res.json(app);
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
