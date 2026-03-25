@@ -71,35 +71,142 @@ export const createApp = async (req, res) => {
 export const getApps = async (req, res) => {
   try {
     const { category, search, page = 1, limit = 20 } = req.query;
-    let filter = {};
-    
-    // Build category filter
-    if (category) {
-      filter.category = { $regex: category, $options: 'i' };
-    }
-    
-    // Build search filter - search across multiple fields
-    if (search) {
-      const searchRegex = { $regex: search, $options: 'i' };
-      filter.$or = [
-        { name: searchRegex },
-        { category: searchRegex },
-        { description1: searchRegex },
-        { description2: searchRegex },
-        { description3: searchRegex }
-      ];
-    }
     
     const pageNum = parseInt(page, 10) || 1;
     const limitNum = parseInt(limit, 10) || 20;
     const skip = (pageNum - 1) * limitNum;
+
+    // If search query exists, use aggregation pipeline for smart priority sorting
+    if (search) {
+      const searchTerm = search.toLowerCase();
+      const searchRegex = new RegExp(searchTerm, 'i');
+
+      const pipeline = [
+        {
+          $match: {
+            $or: [
+              { name: searchRegex },
+              { category: searchRegex },
+              { description1: searchRegex },
+              { description2: searchRegex },
+              { description3: searchRegex }
+            ]
+          }
+        },
+        {
+          // Add score field based on field priority
+          $addFields: {
+            searchScore: {
+              $add: [
+                // Exact name match gets highest score (100)
+                {
+                  $cond: [
+                    { $eq: [{ $toLower: '$name' }, searchTerm] },
+                    100,
+                    0
+                  ]
+                },
+                // Name contains search term (50)
+                {
+                  $cond: [
+                    { $regexMatch: { input: '$name', regex: searchRegex } },
+                    50,
+                    0
+                  ]
+                },
+                // Category match (30)
+                {
+                  $cond: [
+                    { $regexMatch: { input: '$category', regex: searchRegex } },
+                    30,
+                    0
+                  ]
+                },
+                // Description matches (10)
+                {
+                  $cond: [
+                    {
+                      $or: [
+                        { $regexMatch: { input: '$description1', regex: searchRegex } },
+                        { $regexMatch: { input: '$description2', regex: searchRegex } },
+                        { $regexMatch: { input: '$description3', regex: searchRegex } }
+                      ]
+                    },
+                    10,
+                    0
+                  ]
+                }
+              ]
+            }
+          }
+        },
+        {
+          // Sort by search score (highest first), then by rating, then by creation date
+          $sort: {
+            searchScore: -1,
+            rating: -1,
+            createdAt: -1
+          }
+        }
+      ];
+
+      // Add category filter if provided
+      if (category) {
+        pipeline[0].$match.category = { $regex: category, $options: 'i' };
+      }
+
+      const [apps] = await Promise.all([
+        App.aggregate([
+          ...pipeline,
+          { $skip: skip },
+          { $limit: limitNum }
+        ]),
+        App.countDocuments({
+          $or: [
+            { name: searchRegex },
+            { category: searchRegex },
+            { description1: searchRegex },
+            { description2: searchRegex },
+            { description3: searchRegex }
+          ],
+          ...(category && { category: { $regex: category, $options: 'i' } })
+        })
+      ]);
+
+      const total = await App.countDocuments({
+        $or: [
+          { name: searchRegex },
+          { category: searchRegex },
+          { description1: searchRegex },
+          { description2: searchRegex },
+          { description3: searchRegex }
+        ],
+        ...(category && { category: { $regex: category, $options: 'i' } })
+      });
+
+      return res.json({
+        apps,
+        total,
+        page: pageNum,
+        limit: limitNum,
+        totalPages: Math.ceil(total / limitNum)
+      });
+    }
+
+    // No search - just category filter
+    let filter = {};
+    if (category) {
+      filter.category = { $regex: category, $options: 'i' };
+    }
+
     const [apps, total] = await Promise.all([
       App.find(filter)
-        .sort({ createdAt: -1 })
+        .sort({ rating: -1, createdAt: -1 })
         .skip(skip)
         .limit(limitNum),
       App.countDocuments(filter)
     ]);
+
     res.json({
       apps,
       total,
