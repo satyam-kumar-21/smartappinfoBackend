@@ -222,6 +222,40 @@ export const getApps = async (req, res) => {
   }
 };
 
+// Batch endpoint: get apps for multiple categories in one request
+export const getAppsByCategories = async (req, res) => {
+  try {
+    const { categories, limit = 9 } = req.query;
+    if (!categories) {
+      return res.status(400).json({ message: 'categories query param required' });
+    }
+    
+    const catList = categories.split(',').map(c => c.trim()).filter(Boolean);
+    const limitNum = Math.min(parseInt(limit, 10) || 9, 20);
+    
+    // Run all category queries in parallel
+    const results = await Promise.all(
+      catList.map(async (category) => {
+        const apps = await App.find({ category: { $regex: category, $options: 'i' } })
+          .sort({ rating: -1, createdAt: -1 })
+          .limit(limitNum)
+          .lean();
+        return { category, apps };
+      })
+    );
+    
+    // Return as object keyed by category
+    const data = {};
+    for (const { category, apps } of results) {
+      data[category] = apps;
+    }
+    
+    res.json(data);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
 export const getAppById = async (req, res) => {
   try {
     const app = await App.findById(req.params.id);

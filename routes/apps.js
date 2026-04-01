@@ -7,12 +7,15 @@ import {
   getAppById,
   updateApp,
   deleteApp,
-  getAppBySlug
+  getAppBySlug,
+  getAppsByCategories
 } from '../controllers/appController.js';
 
 const router = express.Router();
 
 router.get('/', getApps);
+// Batch endpoint: get apps for multiple categories in one request
+router.get('/by-categories', getAppsByCategories);
 // New endpoint: get app by slugified name
 router.get('/slug/:slug', getAppBySlug);
 router.get('/:id', getAppById);
