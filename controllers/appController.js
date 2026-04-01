@@ -3,25 +3,28 @@ function slugify(name) {
   return name?.toLowerCase().replace(/\s+/g, '-') || '';
 }
 
+// Escape special regex characters to prevent ReDoS / injection
+function escapeRegex(str) {
+  return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
 // Get app by slugified name
 export const getAppBySlug = async (req, res) => {
   try {
     const { slug } = req.params;
     const decodedSlug = decodeURIComponent(slug);
     
-    // Get all app names and find match using slugify function
-    // This is the most reliable way to match since it uses exact same logic as frontend
-    const allApps = await App.find({}, 'name').lean();
+    // Split slug on one-or-more hyphens, escape each part for regex safety,
+    // then join with a pattern that matches any mix of spaces/hyphens.
+    // e.g. "camscanner---pdf-scanner-app" -> /^camscanner[\s\-]+pdf[\s\-]+scanner[\s\-]+app$/i
+    const parts = decodedSlug.split(/-+/).filter(Boolean).map(escapeRegex);
+    const namePattern = parts.join('[\\s\\-]+');
+    const app = await App.findOne({ name: { $regex: new RegExp(`^${namePattern}$`, 'i') } });
     
-    // Find app where slugified name matches the slug
-    const matchedApp = allApps.find(app => slugify(app.name) === decodedSlug);
-    
-    if (!matchedApp) {
+    if (!app) {
       return res.status(404).json({ message: 'App not found' });
     }
     
-    // Now fetch the full app data
-    const app = await App.findOne({ name: matchedApp.name });
     res.json(app);
   } catch (err) {
     res.status(500).json({ message: err.message });
